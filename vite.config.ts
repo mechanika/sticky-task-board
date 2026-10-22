@@ -7,6 +7,9 @@ const base = process.env.BASE_PATH ?? '/sticky-task-board/';
 
 export default defineConfig({
   base,
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')),
+  },
   plugins: [
     react(),
     VitePWA({

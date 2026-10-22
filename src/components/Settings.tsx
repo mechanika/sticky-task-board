@@ -75,6 +75,7 @@ export function Settings({ sync, onClose }: Props) {
         </div>
 
         <div className="modal-actions">
+          <span className="muted">Version {__BUILD_TIME__} UTC</span>
           <span className="spacer" />
           <button className="primary" onClick={onClose}>
             Close
