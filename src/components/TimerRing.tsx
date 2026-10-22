@@ -43,6 +43,8 @@ export function TimerRing({ estimateSec, spentSec, startedAt = null, size = 220 
   const remaining = estimateSec - spent;
   const fraction = estimateSec > 0 ? Math.max(0, Math.min(1, remaining / estimateSec)) : 0;
   const over = remaining < 0;
+  // Warn for the last 10% of the estimate or the last 5 minutes, whichever is longer.
+  const warn = !over && estimateSec > 0 && remaining <= Math.max(estimateSec * 0.1, 300);
   const small = size < 80;
   const mid = size / 2;
 
@@ -52,7 +54,7 @@ export function TimerRing({ estimateSec, spentSec, startedAt = null, size = 220 
   const sweep = (spent % 60) / 60;
 
   return (
-    <div className={`ring ${running ? 'running' : ''} ${over ? 'over' : ''}`} style={{ width: size, height: size }}>
+    <div className={`ring ${running ? 'running' : 'paused'} ${over ? 'over' : warn ? 'warn' : ''}`} style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
         <circle cx={mid} cy={mid} r={r} className="ring-track" strokeWidth={1} fill="none" />
         <circle
