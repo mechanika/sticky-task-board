@@ -1,15 +1,14 @@
 import { useBoard } from '../store';
-import { useNow } from '../useNow';
 import {
   activeTask,
   completeTask,
   formatMinutes,
-  liveSpentSec,
   openTasks,
   sortedProjects,
   startTimer,
   stopTimer,
   taskEstimateSec,
+  taskSpentSec,
 } from '../logic';
 import { TimerRing } from './TimerRing';
 import type { Task } from '../types';
@@ -25,7 +24,6 @@ export function FocusView({ projectId, onProject, onEdit }: Props) {
   const { data, update } = useBoard();
   const projects = sortedProjects(data);
   const project = projects.find((p) => p.id === projectId) ?? projects[0];
-  const now = useNow(!!data.timer);
   if (!project) return <p className="empty">Add a project on the board first.</p>;
 
   const task = activeTask(data, project.id);
@@ -64,7 +62,11 @@ export function FocusView({ projectId, onProject, onEdit }: Props) {
 
       {task ? (
         <div className="focus-main">
-          <TimerRing estimateSec={taskEstimateSec(task)} spentSec={liveSpentSec(data, task, now)} running={running} />
+          <TimerRing
+            estimateSec={taskEstimateSec(task)}
+            spentSec={taskSpentSec(task)}
+            startedAt={running ? data.timer!.startedAt : null}
+          />
           <h2 onClick={() => onEdit(task)}>{task.title}</h2>
           {task.subtasks.length > 0 && (
             <ul className="focus-subs">
@@ -126,12 +128,11 @@ export function FocusView({ projectId, onProject, onEdit }: Props) {
 /** Slim bar pinned to the top of every view while a timer runs. */
 export function RunningBar({ onOpen }: { onOpen: () => void }) {
   const { data, update } = useBoard();
-  const now = useNow(!!data.timer);
   const task = data.timer && data.tasks.find((t) => t.id === data.timer!.taskId);
   if (!task) return null;
   return (
     <div className="running-bar" onClick={onOpen}>
-      <TimerRing size={36} estimateSec={taskEstimateSec(task)} spentSec={liveSpentSec(data, task, now)} running />
+      <TimerRing size={36} estimateSec={taskEstimateSec(task)} spentSec={taskSpentSec(task)} startedAt={data.timer!.startedAt} />
       <span className="running-title">{task.title}</span>
       <button
         className="chip"
