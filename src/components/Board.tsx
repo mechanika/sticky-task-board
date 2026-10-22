@@ -8,7 +8,11 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  pointerWithin,
+  rectIntersection,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core';
 import type { Project, Task } from '../types';
 import { useBoard } from '../store';
@@ -17,6 +21,7 @@ import {
   activeTask,
   completeTask,
   formatMinutes,
+  moveProject,
   moveTask,
   openTasks,
   sortedProjects,
@@ -26,6 +31,15 @@ import {
   uid,
 } from '../logic';
 
+// Columns drop where the pointer is, onto column targets only; tasks keep the default.
+const collision: CollisionDetection = (args) => {
+  if (!args.active.data.current?.projectDrag) return rectIntersection(args);
+  return pointerWithin({
+    ...args,
+    droppableContainers: args.droppableContainers.filter((c) => String(c.id).startsWith('col-')),
+  });
+};
+
 interface Props {
   onEdit: (task: Task) => void;
   onAddTask: (projectId: string) => void;
@@ -34,16 +48,26 @@ interface Props {
 export function Board({ onEdit, onAddTask }: Props) {
   const { data, update } = useBoard();
   const [dragging, setDragging] = useState<Task | null>(null);
+  const [draggingProject, setDraggingProject] = useState<Project | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
   );
 
+  const onDragStart = (e: DragStartEvent) => {
+    const projectId = e.active.data.current?.projectDrag as string | undefined;
+    if (projectId) setDraggingProject(data.projects.find((p) => p.id === projectId) ?? null);
+    else setDragging(data.tasks.find((t) => t.id === e.active.id) ?? null);
+  };
+
   const onDragEnd = (e: DragEndEvent) => {
     setDragging(null);
+    setDraggingProject(null);
     const over = e.over?.data.current as { projectId: string; beforeId: string | null } | undefined;
     if (!over) return;
-    update((d) => moveTask(d, String(e.active.id), over.projectId, over.beforeId));
+    const projectId = e.active.data.current?.projectDrag as string | undefined;
+    if (projectId) update((d) => moveProject(d, projectId, over.projectId));
+    else update((d) => moveTask(d, String(e.active.id), over.projectId, over.beforeId));
   };
 
   const addProject = () => {
@@ -67,9 +91,13 @@ export function Board({ onEdit, onAddTask }: Props) {
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={(e) => setDragging(data.tasks.find((t) => t.id === e.active.id) ?? null)}
+      collisionDetection={collision}
+      onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onDragCancel={() => setDragging(null)}
+      onDragCancel={() => {
+        setDragging(null);
+        setDraggingProject(null);
+      }}
     >
       <div className="board">
         {sortedProjects(data).map((p) => (
@@ -79,7 +107,16 @@ export function Board({ onEdit, onAddTask }: Props) {
           + Project
         </button>
       </div>
-      <DragOverlay>{dragging && <Card task={dragging} color={colorOf(dragging)} overlay />}</DragOverlay>
+      <DragOverlay>
+        {dragging && <Card task={dragging} color={colorOf(dragging)} overlay />}
+        {draggingProject && (
+          <div className="column column-ghost" style={{ ['--accent' as string]: draggingProject.color }}>
+            <header>
+              <span className="column-title">{draggingProject.name}</span>
+            </header>
+          </div>
+        )}
+      </DragOverlay>
     </DndContext>
   );
 
@@ -96,6 +133,12 @@ function Column({ project, onEdit, onAddTask }: { project: Project } & Props) {
     id: `col-${project.id}`,
     data: { projectId: project.id, beforeId: null },
   });
+  const {
+    attributes,
+    listeners,
+    setNodeRef: handleRef,
+    isDragging,
+  } = useDraggable({ id: `proj-${project.id}`, data: { projectDrag: project.id } });
   const totalMin = tasks.reduce((sum, t) => sum + taskEstimateSec(t) / 60, 0);
 
   const rename = () => {
@@ -111,8 +154,15 @@ function Column({ project, onEdit, onAddTask }: { project: Project } & Props) {
   };
 
   return (
-    <section className={`column ${isOver ? 'over' : ''}`} ref={setNodeRef} style={{ ['--accent' as string]: project.color }}>
+    <section
+      className={`column ${isOver ? 'over' : ''}`}
+      ref={setNodeRef}
+      style={{ ['--accent' as string]: project.color, opacity: isDragging ? 0.4 : 1 }}
+    >
       <header>
+        <span className="column-grip" ref={handleRef} {...attributes} {...listeners} aria-label={`Drag to reorder ${project.name}`}>
+          ⠿
+        </span>
         <button className="column-title" onClick={rename} title="Rename (clear the name to delete)">
           {project.name}
         </button>
@@ -134,17 +184,18 @@ function Column({ project, onEdit, onAddTask }: { project: Project } & Props) {
 
 function DraggableCard({ task, color, active, onEdit }: { task: Task; color: string; active: boolean; onEdit: (t: Task) => void }) {
   const { attributes, listeners, setNodeRef: dragRef, isDragging } = useDraggable({ id: task.id });
-  const { setNodeRef: dropRef, isOver } = useDroppable({
+  const { setNodeRef: dropRef, isOver, active: dragActive } = useDroppable({
     id: `before-${task.id}`,
     data: { projectId: task.projectId, beforeId: task.id },
   });
+  const projectDrag = !!dragActive?.data.current?.projectDrag;
   return (
     <div
       ref={(el) => {
         dragRef(el);
         dropRef(el);
       }}
-      className={`card-slot ${isOver ? 'drop-before' : ''}`}
+      className={`card-slot ${isOver && !projectDrag ? 'drop-before' : ''}`}
       style={{ opacity: isDragging ? 0.3 : 1 }}
       {...attributes}
       {...listeners}

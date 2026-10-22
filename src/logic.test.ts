@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BoardData, Task } from './types';
-import { activeTask, completeTask, moveTask, openTasks, startTimer, stopTimer, taskEstimateSec } from './logic';
+import { activeTask, completeTask, moveProject, moveTask, openTasks, sortedProjects, startTimer, stopTimer, taskEstimateSec } from './logic';
 
 function board(): BoardData {
   const t = (id: string, order: number, projectId = 'p1'): Task => ({
@@ -61,5 +61,26 @@ describe('moveTask', () => {
   it('reorders within a column', () => {
     const d = moveTask(board(), 'c', 'p1', 'a');
     expect(openTasks(d, 'p1').map((t) => t.id)).toEqual(['c', 'a', 'b']);
+  });
+});
+
+describe('moveProject', () => {
+  const names = (d: BoardData) => sortedProjects(d).map((p) => p.id);
+  const three = (): BoardData => {
+    const d = board();
+    d.projects.push({ id: 'p3', name: 'Three', color: '#fff', order: 2, activeTaskId: null });
+    return d;
+  };
+
+  it('moves a project to the right', () => {
+    expect(names(moveProject(three(), 'p1', 'p3'))).toEqual(['p2', 'p3', 'p1']);
+  });
+
+  it('moves a project to the left', () => {
+    expect(names(moveProject(three(), 'p3', 'p1'))).toEqual(['p3', 'p1', 'p2']);
+  });
+
+  it('leaves the order alone when dropped on itself', () => {
+    expect(names(moveProject(three(), 'p2', 'p2'))).toEqual(['p1', 'p2', 'p3']);
   });
 });

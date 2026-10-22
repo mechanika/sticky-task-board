@@ -122,6 +122,18 @@ export function moveTask(data: BoardData, taskId: string, projectId: string, bef
   };
 }
 
+/** Move a project column to where `targetId` sits, shifting the others along. */
+export function moveProject(data: BoardData, projectId: string, targetId: string): BoardData {
+  const list = sortedProjects(data);
+  const from = list.findIndex((p) => p.id === projectId);
+  const to = list.findIndex((p) => p.id === targetId);
+  if (from < 0 || to < 0 || from === to) return data;
+  const [moved] = list.splice(from, 1);
+  list.splice(to, 0, moved);
+  const orders = new Map(list.map((p, i) => [p.id, i]));
+  return { ...data, projects: data.projects.map((p) => ({ ...p, order: orders.get(p.id)! })) };
+}
+
 export function formatDuration(sec: number): string {
   const neg = sec < 0;
   const s = Math.abs(Math.round(sec));
