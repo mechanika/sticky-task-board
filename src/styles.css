@@ -90,7 +90,9 @@ main { flex: 1; overflow: auto; padding-bottom: calc(90px + env(safe-area-inset-
 .ring { position: relative; flex: 0 0 auto; }
 .ring svg { display: block; }
 .ring-track { stroke: var(--ring-track); }
-.ring-arc { stroke: var(--accent, var(--primary)); transition: stroke-dasharray 0.9s linear; }
+.ring-arc { stroke: var(--accent, var(--primary)); }
+.ring-tip { fill: #fff; }
+.ring-sweep { stroke: var(--text); opacity: 0.35; }
 .ring.over .ring-arc { stroke: var(--danger); }
 .ring.over .ring-track { stroke: color-mix(in srgb, var(--danger) 35%, var(--ring-track)); }
 .ring.running .ring-arc { filter: drop-shadow(0 0 6px var(--accent, var(--primary))); }

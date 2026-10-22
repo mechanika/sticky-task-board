@@ -13,12 +13,6 @@ export function taskSpentSec(task: Task): number {
   return task.spentSec + task.subtasks.reduce((sum, s) => sum + s.spentSec, 0);
 }
 
-/** Seconds booked against a task, including the running timer. */
-export function liveSpentSec(data: BoardData, task: Task, now: number): number {
-  const running = data.timer?.taskId === task.id ? Math.max(0, (now - data.timer.startedAt) / 1000) : 0;
-  return taskSpentSec(task) + running;
-}
-
 export function openTasks(data: BoardData, projectId: string): Task[] {
   return data.tasks
     .filter((t) => t.projectId === projectId && t.completedAt === null)
