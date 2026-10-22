@@ -96,19 +96,21 @@ main { flex: 1; overflow: auto; padding-bottom: calc(90px + env(safe-area-inset-
 /* Ring */
 .ring { position: relative; flex: 0 0 auto; }
 .ring svg { display: block; }
-.ring-track { stroke: var(--ring-track); }
+.ring-track { stroke: var(--muted); opacity: 0.5; }
 .ring-arc { stroke: var(--accent, var(--primary)); }
-.ring-tip { fill: #fff; }
-.ring-sweep { stroke: var(--text); opacity: 0.55; }
+.ring-sweep { stroke: var(--text); opacity: 0.6; }
 .ring.over .ring-arc { stroke: var(--danger); }
-.ring.over .ring-track { stroke: color-mix(in srgb, var(--danger) 35%, var(--ring-track)); }
-/* Glow goes on the HTML wrapper: Safari stops repainting SVG shapes that carry a CSS filter. */
-.ring.running { filter: drop-shadow(0 0 6px var(--accent, var(--primary))); }
+.ring.over .ring-track { stroke: var(--danger); }
 .ring-label {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   font-variant-numeric: tabular-nums; font-weight: 700;
 }
 .ring-sub { font-size: 0.8rem; font-weight: 400; color: var(--muted); }
+/* Time colour: yellow when paused, white while running, orange near the end, red in overtime. */
+.ring.paused .ring-label { color: #ffd966; }
+.ring.running .ring-label { color: #ffffff; }
+.ring.running.warn .ring-label { color: #ff9f40; }
+.ring.over .ring-label { color: var(--danger); }
 
 /* Focus */
 .focus { max-width: 560px; margin: 0 auto; padding: 16px; }
