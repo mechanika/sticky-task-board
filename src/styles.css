@@ -96,14 +96,11 @@ main { flex: 1; overflow: auto; padding-bottom: calc(90px + env(safe-area-inset-
 /* Ring */
 .ring { position: relative; flex: 0 0 auto; }
 .ring svg { display: block; }
-.ring-track { stroke: var(--ring-track); }
+.ring-track { stroke: var(--muted); opacity: 0.5; }
 .ring-arc { stroke: var(--accent, var(--primary)); }
-.ring-tip { fill: #fff; }
-.ring-sweep { stroke: var(--text); opacity: 0.55; }
+.ring-sweep { stroke: var(--text); opacity: 0.6; }
 .ring.over .ring-arc { stroke: var(--danger); }
-.ring.over .ring-track { stroke: color-mix(in srgb, var(--danger) 35%, var(--ring-track)); }
-/* Glow goes on the HTML wrapper: Safari stops repainting SVG shapes that carry a CSS filter. */
-.ring.running { filter: drop-shadow(0 0 6px var(--accent, var(--primary))); }
+.ring.over .ring-track { stroke: var(--danger); }
 .ring-label {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   font-variant-numeric: tabular-nums; font-weight: 700;
