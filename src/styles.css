@@ -63,7 +63,14 @@ main { flex: 1; overflow: auto; padding-bottom: calc(90px + env(safe-area-inset-
   border-top: 4px solid var(--accent); display: flex; flex-direction: column; gap: 8px;
 }
 .column.over { outline: 2px dashed var(--accent); }
-.column header { display: flex; align-items: center; justify-content: space-between; }
+.column header { display: flex; align-items: center; gap: 4px; }
+.column header .muted { margin-left: auto; }
+.column-grip {
+  cursor: grab; color: var(--muted); padding: 4px 6px; border-radius: 6px; touch-action: none; user-select: none;
+  -webkit-user-select: none; font-size: 1.1rem; line-height: 1;
+}
+.column-grip:hover { background: var(--panel-2); color: var(--text); }
+.column-ghost { cursor: grabbing; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45); transform: rotate(2deg); }
 .column-title { background: transparent; font-weight: 700; padding: 4px; font-size: 1rem; }
 .cards { display: flex; flex-direction: column; gap: 10px; min-height: 20px; }
 .card-slot { touch-action: manipulation; border-top: 3px solid transparent; }
