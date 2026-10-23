@@ -6,6 +6,7 @@ import type { BoardData } from './types';
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const FILE_NAME = 'sticky-task-board.json';
 const CLIENT_ID_KEY = 'stb.googleClientId';
+const TOKEN_KEY = 'stb.googleToken';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -14,8 +15,31 @@ declare global {
   }
 }
 
-let token: { value: string; expiresAt: number } | null = null;
+type Token = { value: string; expiresAt: number };
+
+// The access token is kept across reloads (it lasts about an hour) so
+// reopening the app doesn't need a new Google popup each time.
+let token: Token | null = loadToken();
 let fileId: string | null = null;
+
+function loadToken(): Token | null {
+  try {
+    const t = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null') as Token | null;
+    return t && t.expiresAt > Date.now() ? t : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveToken(t: Token | null) {
+  token = t;
+  try {
+    if (t) localStorage.setItem(TOKEN_KEY, JSON.stringify(t));
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Storage blocked; the token still works for this session.
+  }
+}
 
 export function getClientId(): string {
   return localStorage.getItem(CLIENT_ID_KEY) || import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -23,7 +47,7 @@ export function getClientId(): string {
 
 export function setClientId(id: string) {
   localStorage.setItem(CLIENT_ID_KEY, id.trim());
-  token = null;
+  saveToken(null);
 }
 
 function loadGis(): Promise<void> {
@@ -41,20 +65,26 @@ export function isSignedIn(): boolean {
   return !!token && token.expiresAt > Date.now() + 30_000;
 }
 
-/** Ask Google for an access token. `interactive` shows the consent popup if needed. */
+/**
+ * Make sure we hold a Google access token. Getting a new one always opens a
+ * Google popup (a new tab on phones), so that only happens when `interactive`
+ * is set from a tap. Background syncs never open it: a popup steals focus,
+ * and the focus listener would retry as soon as it closed, looping forever.
+ */
 export async function signIn(interactive: boolean): Promise<boolean> {
   const clientId = getClientId();
   if (!clientId) return false;
   if (isSignedIn()) return true;
+  if (!interactive) return false;
   await loadGis();
   return new Promise((resolve) => {
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: SCOPE,
-      prompt: interactive ? '' : 'none',
+      prompt: '',
       callback: (resp: any) => {
         if (resp.error || !resp.access_token) return resolve(false);
-        token = { value: resp.access_token, expiresAt: Date.now() + resp.expires_in * 1000 };
+        saveToken({ value: resp.access_token, expiresAt: Date.now() + resp.expires_in * 1000 });
         localStorage.setItem('stb.driveLinked', '1');
         resolve(true);
       },
@@ -66,7 +96,7 @@ export async function signIn(interactive: boolean): Promise<boolean> {
 
 export function signOut() {
   if (token) window.google?.accounts?.oauth2?.revoke(token.value);
-  token = null;
+  saveToken(null);
   fileId = null;
   localStorage.removeItem('stb.driveLinked');
 }
@@ -79,7 +109,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     ...init,
     headers: { ...(init.headers || {}), Authorization: `Bearer ${token.value}` },
   });
-  if (res.status === 401) token = null;
+  if (res.status === 401) saveToken(null);
   if (!res.ok) throw new Error(`Google Drive error ${res.status}`);
   return res;
 }
