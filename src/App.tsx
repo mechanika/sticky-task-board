@@ -10,6 +10,7 @@ import { MindMap } from './components/MindMap';
 import { Completed } from './components/Completed';
 import { TaskEditor } from './components/TaskEditor';
 import { Settings } from './components/Settings';
+import { MessageIcon } from './components/MessageIcon';
 
 type View = 'board' | 'focus' | 'map' | 'done';
 const VIEWS: { id: View; label: string }[] = [
@@ -36,7 +37,7 @@ export default function App() {
   useEffect(() => localStorage.setItem('stb.view', view), [view]);
   const editing = data.tasks.find((t) => t.id === editingId) ?? null;
 
-  const addTask = (projectId: string, title = '', estimateMin = 15): Task => {
+  const addTask = (projectId: string, title = '', estimateMin = 15, message = false): Task => {
     const task: Task = {
       id: uid(),
       projectId,
@@ -47,6 +48,7 @@ export default function App() {
       subtasks: [],
       order: Math.max(-1, ...openTasks(data, projectId).map((t) => t.order)) + 1,
       completedAt: null,
+      ...(message ? { message } : {}),
     };
     update((d) => ({ ...d, tasks: [...d.tasks, task] }));
     return task;
@@ -104,7 +106,7 @@ function QuickAdd({
   onClose,
   defaultProject,
 }: {
-  onAdd: (projectId: string, title: string, estimateMin: number) => void;
+  onAdd: (projectId: string, title: string, estimateMin: number, message: boolean) => void;
   onClose: () => void;
   defaultProject: string | null;
 }) {
@@ -115,10 +117,11 @@ function QuickAdd({
     defaultProject && projects.some((p) => p.id === defaultProject) ? defaultProject : projects[0].id,
   );
   const [estimate, setEstimate] = useState(15);
+  const [message, setMessage] = useState(false);
 
   const submit = (keepOpen: boolean) => {
     if (!title.trim()) return;
-    onAdd(projectId, title.trim(), estimate);
+    onAdd(projectId, title.trim(), estimate, message);
     setTitle('');
     if (!keepOpen) onClose();
   };
@@ -153,6 +156,15 @@ function QuickAdd({
               {m < 60 ? `${m}m` : `${m / 60}h`}
             </button>
           ))}
+          <button
+            type="button"
+            className={`chip msg-toggle ${message ? 'on' : ''}`}
+            onClick={() => setMessage(!message)}
+            aria-label="Message / communication task"
+            aria-pressed={message}
+          >
+            <MessageIcon filled={message} />
+          </button>
         </div>
         <div className="modal-actions">
           <button type="button" onClick={onClose}>
