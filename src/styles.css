@@ -70,19 +70,18 @@ main { flex: 1; overflow: auto; padding-bottom: calc(90px + env(safe-area-inset-
   -webkit-user-select: none; font-size: 1.1rem; line-height: 1;
 }
 .column-grip:hover { background: var(--panel-2); color: var(--text); }
-.column-ghost { cursor: grabbing; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45); transform: rotate(2deg); }
+.column-ghost { cursor: grabbing; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45); }
 .column-title { background: transparent; font-weight: 700; padding: 4px; font-size: 1rem; }
 .cards { display: flex; flex-direction: column; gap: 10px; min-height: 20px; }
 .card-slot { touch-action: manipulation; border-top: 3px solid transparent; }
 .card-slot.drop-before { border-top-color: var(--primary); }
 .card {
   color: var(--ink); border-radius: 4px 4px 14px 4px; padding: 10px 12px; cursor: grab;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35); transform: rotate(-0.6deg);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
 }
-.card-slot:nth-child(even) .card { transform: rotate(0.6deg); }
 .card.active { outline: 3px solid #fff; outline-offset: 2px; }
 .card.running { box-shadow: 0 0 0 3px var(--primary), 0 3px 8px rgba(0, 0, 0, 0.35); }
-.card.overlay { transform: rotate(3deg) scale(1.04); cursor: grabbing; }
+.card.overlay { transform: scale(1.03); cursor: grabbing; }
 .card-title { font-weight: 600; margin-bottom: 4px; word-break: break-word; }
 .card-subs { margin: 4px 0; padding-left: 18px; font-size: 0.85rem; }
 .card-subs .done { text-decoration: line-through; opacity: 0.6; }
