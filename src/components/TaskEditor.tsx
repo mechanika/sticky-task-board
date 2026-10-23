@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Subtask, Task } from '../types';
 import { useBoard } from '../store';
+import { MessageIcon } from './MessageIcon';
 import { formatDuration, formatMinutes, moveTask, sortedProjects, taskEstimateSec, uid } from '../logic';
 
 interface Props {
@@ -86,6 +87,11 @@ export function TaskEditor({ task, onClose }: Props) {
             <div className="muted">Estimate: {formatMinutes(taskEstimateSec(draft) / 60)} from sub-tasks</div>
           )}
         </div>
+        <label className="toggle-row">
+          <input type="checkbox" checked={!!draft.message} onChange={(e) => setDraft({ ...draft, message: e.target.checked })} />
+          <MessageIcon filled={draft.message} size={16} />
+          Just a message / communication
+        </label>
         <textarea
           placeholder="Notes"
           rows={4}

@@ -17,6 +17,8 @@ export interface Task {
   subtasks: Subtask[];
   order: number;
   completedAt: number | null;
+  /** Just a message or communication needed, shown with a speech bubble on the board. */
+  message?: boolean;
 }
 
 export interface Project {

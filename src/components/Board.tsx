@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/core';
 import type { Project, Task } from '../types';
 import { useBoard } from '../store';
+import { MessageIcon } from './MessageIcon';
 import {
   COLORS,
   activeTask,
@@ -237,7 +238,7 @@ function Card({
 
   return (
     <article
-      className={`card ${active ? 'active' : ''} ${running ? 'running' : ''} ${overlay ? 'overlay' : ''}`}
+      className={`card ${active ? 'active' : ''} ${running ? 'running' : ''} ${overlay ? 'overlay' : ''} ${task.message ? 'message' : ''}`}
       style={{ background: color }}
       onClick={() => onEdit?.(task)}
     >
@@ -258,6 +259,19 @@ function Card({
           {task.subtasks.length > 0 && ` · ${doneSubs}/${task.subtasks.length}`}
         </span>
         <span className="card-actions">
+          <button
+            className={`chip msg-toggle ${task.message ? 'on' : ''}`}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              update((d) => ({ ...d, tasks: d.tasks.map((t) => (t.id === task.id ? { ...t, message: !t.message } : t)) }));
+            }}
+            aria-label={task.message ? 'Unmark as message task' : 'Mark as message task'}
+            aria-pressed={!!task.message}
+            title="Message / communication task"
+          >
+            <MessageIcon filled={task.message} />
+          </button>
           {!active && (
             <button className="chip" onPointerDown={(e) => e.stopPropagation()} onClick={setActive} title="Make this the active task">
               Set active

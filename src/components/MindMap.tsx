@@ -43,7 +43,7 @@ export function MindMap({ onEdit }: { onEdit: (t: Task) => void }) {
         key: t.id,
         depth: 2,
         y: 0,
-        label: t.title,
+        label: (t.message ? '💬 ' : '') + t.title,
         sub: formatMinutes(Math.round(taskEstimateSec(t) / 60)),
         color: p.color,
         parent: pNode,

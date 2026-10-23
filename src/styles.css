@@ -90,6 +90,12 @@ main { flex: 1; overflow: auto; padding-bottom: calc(90px + env(safe-area-inset-
 .card footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; margin-top: 6px; }
 .card-actions { display: flex; gap: 4px; }
 .card .chip { color: var(--ink); }
+.chip.msg-toggle { display: inline-flex; align-items: center; padding: 4px 7px; opacity: 0.45; }
+.chip.msg-toggle.on { opacity: 1; background: var(--ink); color: #fff; }
+.card .chip.msg-toggle.on { color: #fff; }
+.message-icon { display: block; }
+.toggle-row { flex-direction: row; align-items: center; gap: 8px; color: var(--text); font-size: 0.95rem; }
+.toggle-row input { width: auto; }
 .add-task { background: transparent; color: var(--muted); text-align: left; }
 .add-column { flex: 0 0 160px; height: 48px; background: var(--panel); color: var(--muted); }
 
