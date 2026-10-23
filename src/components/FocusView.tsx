@@ -2,6 +2,7 @@ import { useBoard } from '../store';
 import {
   activeTask,
   completeTask,
+  currentSubtaskId,
   formatMinutes,
   openTasks,
   sortedProjects,
@@ -29,6 +30,9 @@ export function FocusView({ projectId, onProject, onEdit }: Props) {
   const task = activeTask(data, project.id);
   const queue = openTasks(data, project.id).filter((t) => t.id !== task?.id);
   const running = !!task && data.timer?.taskId === task.id;
+  // The sub-task the timer books to: the running one, or the next unfinished one.
+  const currentSubId = running ? data.timer!.subtaskId : task && currentSubtaskId(task);
+  const currentSub = task?.subtasks.find((s) => s.id === currentSubId) ?? null;
 
   const toggleSub = (id: string) =>
     update((d) => {
@@ -66,6 +70,7 @@ export function FocusView({ projectId, onProject, onEdit }: Props) {
             estimateSec={taskEstimateSec(task)}
             spentSec={taskSpentSec(task)}
             startedAt={running ? data.timer!.startedAt : null}
+            inner={currentSub && { estimateSec: currentSub.estimateMin * 60, spentSec: currentSub.spentSec, title: currentSub.title }}
           />
           <h2 onClick={() => onEdit(task)}>{task.title}</h2>
           {task.subtasks.length > 0 && (
