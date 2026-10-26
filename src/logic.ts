@@ -134,6 +134,30 @@ export function moveProject(data: BoardData, projectId: string, targetId: string
   return { ...data, projects: data.projects.map((p) => ({ ...p, order: orders.get(p.id)! })) };
 }
 
+/**
+ * Move a sub-task to sit before `beforeId` (or to the end). The top unfinished
+ * sub-task is the one the timer books to, so a running timer banks its time
+ * and restarts against whichever sub-task is now on top.
+ */
+export function moveSubtask(data: BoardData, taskId: string, subId: string, beforeId: string | null, now: number): BoardData {
+  if (subId === beforeId) return data;
+  const wasRunning = data.timer?.taskId === taskId;
+  let next = wasRunning ? stopTimer(data, now) : data;
+  next = {
+    ...next,
+    tasks: next.tasks.map((t) => {
+      if (t.id !== taskId) return t;
+      const moved = t.subtasks.find((s) => s.id === subId);
+      if (!moved) return t;
+      const rest = t.subtasks.filter((s) => s.id !== subId);
+      const at = beforeId ? rest.findIndex((s) => s.id === beforeId) : -1;
+      rest.splice(at < 0 ? rest.length : at, 0, moved);
+      return { ...t, subtasks: rest };
+    }),
+  };
+  return wasRunning ? startTimer(next, taskId, now) : next;
+}
+
 export function formatDuration(sec: number): string {
   const neg = sec < 0;
   const s = Math.abs(Math.round(sec));

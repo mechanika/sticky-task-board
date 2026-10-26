@@ -1,9 +1,21 @@
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { useBoard } from '../store';
 import {
   activeTask,
   completeTask,
   currentSubtaskId,
   formatMinutes,
+  moveSubtask,
   openTasks,
   sortedProjects,
   startTimer,
@@ -12,7 +24,7 @@ import {
   taskSpentSec,
 } from '../logic';
 import { TimerRing } from './TimerRing';
-import type { Task } from '../types';
+import type { Subtask, Task } from '../types';
 
 interface Props {
   projectId: string | null;
@@ -74,17 +86,12 @@ export function FocusView({ projectId, onProject, onEdit }: Props) {
           />
           <h2 onClick={() => onEdit(task)}>{task.title}</h2>
           {task.subtasks.length > 0 && (
-            <ul className="focus-subs">
-              {task.subtasks.map((s) => (
-                <li key={s.id} className={s.done ? 'done' : ''}>
-                  <label>
-                    <input type="checkbox" checked={s.done} onChange={() => toggleSub(s.id)} />
-                    {s.title}
-                  </label>
-                  <span className="muted">{formatMinutes(s.estimateMin)}</span>
-                </li>
-              ))}
-            </ul>
+            <SubtaskList
+              subtasks={task.subtasks}
+              currentId={currentSubId ?? null}
+              onToggle={toggleSub}
+              onMove={(id, beforeId) => update((d) => moveSubtask(d, task.id, id, beforeId, Date.now()))}
+            />
           )}
           <div className="focus-actions">
             <button
@@ -128,6 +135,82 @@ export function FocusView({ projectId, onProject, onEdit }: Props) {
       )}
     </div>
   );
+}
+
+/**
+ * Sub-tasks in work order. Drag the grip (or tap ↑) to reorder; the top
+ * unfinished one is the one the timer counts down.
+ */
+function SubtaskList({
+  subtasks,
+  currentId,
+  onToggle,
+  onMove,
+}: {
+  subtasks: Subtask[];
+  currentId: string | null;
+  onToggle: (id: string) => void;
+  onMove: (id: string, beforeId: string | null) => void;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 0, tolerance: 4 } }),
+  );
+  const onDragEnd = (e: DragEndEvent) => {
+    const over = e.over?.data.current as { beforeId: string | null } | undefined;
+    if (over) onMove(String(e.active.id), over.beforeId);
+  };
+  const firstOpen = subtasks.find((s) => !s.done)?.id;
+  return (
+    <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
+      <ul className="focus-subs">
+        {subtasks.map((s) => (
+          <SubtaskRow
+            key={s.id}
+            sub={s}
+            current={s.id === currentId}
+            onToggle={() => onToggle(s.id)}
+            onTop={!s.done && s.id !== firstOpen ? () => onMove(s.id, subtasks[0].id) : undefined}
+          />
+        ))}
+        <EndSlot />
+      </ul>
+    </DndContext>
+  );
+}
+
+function SubtaskRow({ sub, current, onToggle, onTop }: { sub: Subtask; current: boolean; onToggle: () => void; onTop?: () => void }) {
+  const { attributes, listeners, setNodeRef: dragRef, isDragging } = useDraggable({ id: sub.id });
+  const { setNodeRef: dropRef, isOver } = useDroppable({ id: `before-${sub.id}`, data: { beforeId: sub.id } });
+  return (
+    <li
+      ref={(el) => {
+        dragRef(el);
+        dropRef(el);
+      }}
+      className={`${sub.done ? 'done' : ''} ${current ? 'current' : ''} ${isOver && !isDragging ? 'drop-before' : ''}`}
+      style={{ opacity: isDragging ? 0.4 : 1 }}
+    >
+      <span className="sub-grip" {...attributes} {...listeners} aria-label={`Drag to reorder ${sub.title}`}>
+        ⠿
+      </span>
+      <label>
+        <input type="checkbox" checked={sub.done} onChange={onToggle} />
+        {sub.title}
+      </label>
+      {onTop && (
+        <button className="chip sub-top" onClick={onTop} title="Work on this next" aria-label={`Move ${sub.title} to the top`}>
+          ↑
+        </button>
+      )}
+      <span className="muted">{formatMinutes(sub.estimateMin)}</span>
+    </li>
+  );
+}
+
+function EndSlot() {
+  const { setNodeRef, isOver } = useDroppable({ id: 'sub-end', data: { beforeId: null } });
+  return <li ref={setNodeRef} className={`sub-end ${isOver ? 'drop-before' : ''}`} aria-hidden />;
 }
 
 /** Slim bar pinned to the top of every view while a timer runs. */
