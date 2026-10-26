@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BoardData, Task } from './types';
-import { activeTask, completeTask, moveProject, moveTask, openTasks, sortedProjects, startTimer, stopTimer, taskEstimateSec } from './logic';
+import { activeTask, completeTask, moveProject, moveSubtask, moveTask, openTasks, sortedProjects, startTimer, stopTimer, taskEstimateSec } from './logic';
 
 function board(): BoardData {
   const t = (id: string, order: number, projectId = 'p1'): Task => ({
@@ -82,5 +82,27 @@ describe('moveProject', () => {
 
   it('leaves the order alone when dropped on itself', () => {
     expect(names(moveProject(three(), 'p2', 'p2'))).toEqual(['p1', 'p2', 'p3']);
+  });
+});
+
+describe('moveSubtask', () => {
+  const withSubs = (): BoardData => {
+    const d = board();
+    d.tasks[1].subtasks = ['s1', 's2', 's3'].map((id) => ({ id, title: id, estimateMin: 10, spentSec: 0, done: false }));
+    return d;
+  };
+  const ids = (d: BoardData) => d.tasks[1].subtasks.map((s) => s.id);
+
+  it('moves a sub-task before another one, or to the end', () => {
+    expect(ids(moveSubtask(withSubs(), 'b', 's3', 's1', 0))).toEqual(['s3', 's1', 's2']);
+    expect(ids(moveSubtask(withSubs(), 'b', 's1', null, 0))).toEqual(['s2', 's3', 's1']);
+  });
+
+  it('banks running time and switches the timer to the new top sub-task', () => {
+    const d = startTimer(withSubs(), 'b', 0);
+    expect(d.timer!.subtaskId).toBe('s1');
+    const next = moveSubtask(d, 'b', 's2', 's1', 60_000);
+    expect(next.tasks[1].subtasks.find((s) => s.id === 's1')!.spentSec).toBe(60);
+    expect(next.timer).toMatchObject({ subtaskId: 's2', startedAt: 60_000 });
   });
 });
